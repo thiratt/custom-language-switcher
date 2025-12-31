@@ -1,0 +1,4 @@
+#include "resource.h"
+
+// รูปแบบ: ID  ประเภท  "ชื่อไฟล์"
+IDI_ICON1 ICON "AppIcon.ico"

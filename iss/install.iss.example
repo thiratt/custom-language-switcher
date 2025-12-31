@@ -1,0 +1,78 @@
+#define MyAppName "Custom Language Switcher"
+#define MyAppVersion "1.0"
+#define MyAppPublisher "Your name"
+#define MyAppExeName "CustomLanguageSwitcher.exe"
+#define MyExeSourcePath "..\out"
+
+[Setup]
+AppId={{EBEC7427-DA62-4EBB-9539-82EA3F9A3C44}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+DefaultDirName={autopf}\{#MyAppName}
+DefaultGroupName={#MyAppName}
+PrivilegesRequired=admin
+DisableProgramGroupPage=yes
+OutputBaseFilename=CustomLanguageSwitcher_v{#MyAppVersion}_Setup
+Compression=lzma
+SolidCompression=yes
+WizardStyle=modern
+UninstallDisplayIcon={app}\{#MyAppExeName}
+CloseApplications=yes
+SetupIconFile=..\AppIcon.ico
+
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "Additional icons:"
+
+[Files]
+Source: "{#MyExeSourcePath}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "TaskConfig.xml"; DestDir: "{tmp}"; Flags: deleteafterinstall
+
+[Icons]
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent shellexec
+
+[UninstallRun]
+Filename: "schtasks"; Parameters: "/Delete /TN ""{#MyAppName}"" /F"; Flags: runhidden
+
+[Code]
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  XmlAnsiContent: AnsiString;
+  XmlStringContent: String;
+  XmlPath: String;
+  AppExePath: String;
+  ResultCode: Integer;
+begin
+  if CurStep = ssPostInstall then
+  begin
+    XmlPath := ExpandConstant('{tmp}\TaskConfig.xml');
+    AppExePath := ExpandConstant('{app}\{#MyAppExeName}');
+    
+    WizardForm.StatusLabel.Caption := 'Configuring Auto-Start Task...';
+    
+    if LoadStringFromFile(XmlPath, XmlAnsiContent) then
+    begin
+      XmlStringContent := String(XmlAnsiContent);
+      StringChange(XmlStringContent, '__APP_PATH__', AppExePath);        
+      XmlAnsiContent := AnsiString(XmlStringContent);
+      SaveStringToFile(XmlPath, XmlAnsiContent, False);
+      
+      Exec('schtasks', '/Create /TN "{#MyAppName}" /XML "' + XmlPath + '" /F', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    end;
+  end;
+end;
+
+function InitializeUninstall(): Boolean;
+var
+  ResultCode: Integer;
+begin
+  Exec('taskkill.exe', '/F /IM {#MyAppExeName}', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);  
+  Result := True;
+end;
