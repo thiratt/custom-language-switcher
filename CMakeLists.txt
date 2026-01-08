@@ -4,6 +4,13 @@ project(CustomLanguageSwitcher)
 set(CMAKE_CXX_STANDARD 20)
 set(SOURCES main.cpp)
 
+if(MSVC)
+    add_compile_options(
+        $<$<CONFIG:Debug>:/MTd>
+        $<$<CONFIG:Release>:/MT>
+    )
+endif()
+
 if(WIN32)
     list(APPEND SOURCES AppWindows.cpp CustomLanguageSwitcher.rc)
         
